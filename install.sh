@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
-# ==========================================
-# Skrip Otomasi Deployment Private Cam
-# ==========================================
+# =========================================================================
+# Skrip Otomasi Deployment Server PrivateCam.
+# Berkas ini melakukan pengecekan ketersediaan sistem Docker & Docker Compose,
+# mendeteksi IP lokal host secara otomatis, membangun image Docker berbasis
+# multi-stage builder, serta menyalakan kontainer PrivateCam di latar belakang.
+# =========================================================================
 
 # Cetak warna untuk output terminal
 RED='\033[0;31m'

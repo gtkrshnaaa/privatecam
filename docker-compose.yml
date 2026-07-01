@@ -1,3 +1,8 @@
+# =========================================================================
+# Konfigurasi Docker Compose untuk Deployment Server PrivateCam.
+# Memetakan port kontainer internal 8080 ke port host eksternal 49111,
+# mengatur nama kontainer, zona waktu lokal, dan menerapkan kebijakan restart otomatis.
+# =========================================================================
 version: '3.8'
 
 services:

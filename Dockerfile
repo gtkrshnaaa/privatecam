@@ -1,3 +1,9 @@
+# =========================================================================
+# Dockerfile Multi-stage untuk PrivateCam.
+# Stage 1: Melakukan build binary Go secara statis menggunakan compiler Golang-alpine.
+# Stage 2: Menyusun image final berbasis Alpine Linux yang sangat ringan, menyalin
+#          binary server terkompilasi beserta aset statis frontend, dan mengekspos port 8080.
+# =========================================================================
 # --- Stage 1: Build Golang Binary ---
 FROM golang:1.22-alpine AS builder
 

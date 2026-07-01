@@ -1,4 +1,11 @@
+/*
+ * Backend Server Golang untuk Sistem CCTV Privat (PrivateCam).
+ * File ini mengelola alur upload gambar dari ESP32-CAM, penyiaran video stream (MJPEG),
+ * otentikasi admin berbasis SQLite (username: admin, password: password), manajemen sesi cookie,
+ * dan penyajian aset statis untuk frontend dasbor.
+ */
 package main
+
 
 import (
 	"crypto/rand"

@@ -1,3 +1,9 @@
+/*
+ * Logika Interaksi Klien (JS) - Dasbor Utama PrivateCam.
+ * Menangani inisialisasi aliran video MJPEG dari server backend, polling berkala status sistem,
+ * manajemen sesi login (pengalihan otomatis ke login.html apabila 401 Unauthorized),
+ * kontrol layar penuh, pencatatan log aktivitas secara real-time, dan fungsi logout.
+ */
 // State Management
 let cameraOnline = false;
 let lastKnownFrameTime = null;

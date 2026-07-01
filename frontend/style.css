@@ -1,4 +1,9 @@
-/* Root Variables & Reset - Minimalist Tegas (Neobrutalist) */
+/*
+ * Gaya Tampilan Utama (CSS) - Minimalist Tegas (Neobrutalist) untuk PrivateCam.
+ * Mendefinisikan variabel warna dasar (latar putih, teks hitam, aksen merah muda manis),
+ * tata letak bento grid untuk dasbor utama, formulir login kaku bersudut siku,
+ * serta animasi status berkedip dan kotak pemuat (loader).
+ */
 :root {
     --bg-primary: #ffffff;
     --bg-surface: #ffffff;
