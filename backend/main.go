@@ -16,6 +16,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -417,7 +418,11 @@ func main() {
 	// Terapkan middleware otentikasi
 	var protectedHandler http.Handler = authMiddleware(mux)
 
-	var serverAddr string = ":8080"
+	var port string = os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	var serverAddr string = ":" + port
 	log.Printf("Server berjalan di alamat http://localhost%s\n", serverAddr)
 	
 	var err error
