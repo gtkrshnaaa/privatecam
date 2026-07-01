@@ -1,33 +1,33 @@
-# Development Conventions
+# Konvensi Teknis Pengembangan
 
-This document outlines the standard coding practices and conventions for the Private Cam project. All developers and contributions must adhere to these guidelines.
+Dokumen ini mengatur standar praktis pemrograman dan konvensi teknis untuk proyek Private Cam. Seluruh pengembang dan kontribusi wajib mematuhi aturan-aturan berikut.
 
-## 1. Directory Structure Cleanliness
-* Keep the workspace directory clean and free of temporary, unused, or dangling files.
-* Do not commit local editor configurations, log files, or build artifacts. Keep files organized within their defined directories:
-  * `firmware/` – ESP32-CAM program code.
-  * `backend/` – Golang server files.
-  * `frontend/` – Static UI monitoring dashboard files.
+## 1. Kebersihan Struktur Direktori
+* Jaga agar direktori kerja tetap bersih dan bebas dari berkas sementara, tidak terpakai, atau terbengkalai.
+* Jangan melakukan commit untuk konfigurasi editor lokal, berkas log, atau hasil *build*. Pastikan berkas-berkas terorganisasi di dalam direktori yang telah ditentukan:
+  * `firmware/` – Kode program ESP32-CAM (C++/Arduino).
+  * `backend/` – Berkas server Golang.
+  * `frontend/` – Berkas dasbor pemantauan UI statis.
 
-## 2. Backend (Golang) Conventions
-* **Variable Declarations**: 
-  * The short variable declaration syntax (`:=`) is strictly forbidden.
-  * Use the standard `var` keyword for all variable declarations to improve readability and ensure explicit type or declaration styles.
-  * Example:
+## 2. Konvensi Backend (Golang)
+* **Deklarasi Variabel**:
+  * Sintaks deklarasi variabel pendek (`:=`) dilarang keras untuk digunakan.
+  * Gunakan kata kunci `var` standar untuk seluruh deklarasi variabel guna meningkatkan keterbacaan dan memastikan tipe data atau gaya deklarasi tertulis secara eksplisit.
+  * Contoh:
     ```go
-    // Forbidden
+    // Dilarang
     // x := 10
     
-    // Required
+    // Wajib
     var x int = 10
     ```
-* Keep functions simple, focused, and well-structured.
+* Jaga agar fungsi tetap sederhana, terfokus, dan terstruktur dengan baik.
 
-## 3. Frontend Conventions
-* **Styling (CSS)**:
-  * Use pure, vanilla CSS only.
-  * Third-party CSS frameworks (e.g., Tailwind CSS, Bootstrap, Bulma) are strictly prohibited.
-  * Write clean, organized, and modular CSS selectors.
-* **UI Components**:
-  * Component libraries, UI kits, or specialized components (e.g., shadcn/ui, Radix UI) are strictly prohibited.
-  * Write native HTML, CSS, and JS components to keep the codebase simple, light, and dependency-free.
+## 3. Konvensi Frontend
+* **Gaya Visual (CSS)**:
+  * Gunakan CSS murni (*vanilla CSS*) saja.
+  * *Framework* CSS pihak ketiga (seperti Tailwind CSS, Bootstrap, Bulma) dilarang keras untuk digunakan.
+  * Tulis selektor CSS yang bersih, terorganisasi, dan modular.
+* **Komponen Antarmuka (UI Components)**:
+  * Pustaka komponen, *UI kit*, atau komponen khusus (seperti shadcn/ui, Radix UI) dilarang keras untuk digunakan.
+  * Tulis komponen HTML, CSS, dan JS secara *native* untuk menjaga agar basis kode tetap sederhana, ringan, dan bebas dari dependensi pihak ketiga.
