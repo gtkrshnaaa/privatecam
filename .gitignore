@@ -1,0 +1,45 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Golang / Backend
+backend/backend
+backend/bin/
+backend/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Arduino / C++ / Firmware
+firmware/build/
+firmware/bin/
+*.o
+*.a
+*.la
+*.lo
+*.so
+*.elf
+*.hex
+*.bin
+
+# Environment configuration
+.env
+.env.local
+.env.*.local
+
+# Docker / System
+*.log
