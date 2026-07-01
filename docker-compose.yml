@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  privatecam:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: privatecam-cctv
+    ports:
+      - "49111:8080"
+    restart: always
+    environment:
+      - TZ=Asia/Jakarta
