@@ -13,7 +13,7 @@
 // ==========================================
 const char* ssid = "NAMA_WIFI_ANDA";
 const char* password = "PASSWORD_WIFI_ANDA";
-const char* serverUrl = "http://ALAMAT_IP_SERVER_GOLANG:8080/upload";
+const char* serverUrl = "http://ALAMAT_IP_SERVER_GOLANG:49111/upload";
 
 // ==========================================
 // KONFIGURASI PIN ESP32-CAM (AI-THINKER MODULE)
