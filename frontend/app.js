@@ -12,6 +12,7 @@ const statLastFrame = document.getElementById('statLastFrame');
 const logContainer = document.getElementById('logContainer');
 const btnRefresh = document.getElementById('btnRefresh');
 const btnFullscreen = document.getElementById('btnFullscreen');
+const btnLogout = document.getElementById('btnLogout');
 const videoContainer = document.querySelector('.video-container');
 
 // Menambahkan entri log ke kontainer log
@@ -95,6 +96,11 @@ function updateCameraStatus(statusData) {
 async function fetchServerStatus() {
     try {
         const response = await fetch('/status');
+        if (response.status === 401) {
+            window.location.href = '/login.html';
+            return;
+        }
+        
         if (!response.ok) {
             throw new Error(`HTTP error: ${response.status}`);
         }
@@ -155,6 +161,21 @@ btnFullscreen.addEventListener('click', () => {
 document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement) {
         addLog("Keluar dari mode layar penuh.", "system");
+    }
+});
+
+// Logout handler
+btnLogout.addEventListener('click', async () => {
+    addLog("Melakukan proses keluar (logout)...", "system");
+    try {
+        const response = await fetch('/logout', { method: 'POST' });
+        if (response.ok) {
+            window.location.href = '/login.html';
+        } else {
+            addLog("Gagal keluar dari sesi.", "error");
+        }
+    } catch (err) {
+        addLog("Gagal terhubung untuk logout.", "error");
     }
 });
 

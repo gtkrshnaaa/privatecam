@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +11,9 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
 )
 
 // StreamServer mengelola data streaming gambar dari ESP32-CAM ke banyak web client.
@@ -69,6 +75,110 @@ func (server *StreamServer) GetLastFrameTime() time.Time {
 
 // Global server instance
 var streamServer *StreamServer = NewStreamServer()
+
+// Database global instance
+var db *sql.DB
+
+// Inisialisasi database SQLite
+func initDB() {
+	var err error
+	db, err = sql.Open("sqlite", "privatecam.db")
+	if err != nil {
+		log.Fatalf("Gagal membuka database: %v", err)
+	}
+
+	var createTableQuery string = `
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		username TEXT UNIQUE,
+		password TEXT
+	);`
+	_, err = db.Exec(createTableQuery)
+	if err != nil {
+		log.Fatalf("Gagal membuat tabel users: %v", err)
+	}
+
+	// Cek apakah user admin default sudah ada
+	var row *sql.Row = db.QueryRow("SELECT id FROM users WHERE username = ?", "admin")
+	var id int
+	err = row.Scan(&id)
+	if err == sql.ErrNoRows {
+		// Hashing password default "password"
+		var hashedPasswordBytes []byte
+		hashedPasswordBytes, err = bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatalf("Gagal melakukan hashing password: %v", err)
+		}
+		var hashedPassword string = string(hashedPasswordBytes)
+
+		_, err = db.Exec("INSERT INTO users (username, password) VALUES (?, ?)", "admin", hashedPassword)
+		if err != nil {
+			log.Fatalf("Gagal memasukkan user admin default: %v", err)
+		}
+		log.Println("User admin default (username: admin, password: password) berhasil dibuat di database.")
+	} else if err != nil {
+		log.Fatalf("Gagal melakukan verifikasi pengguna admin: %v", err)
+	}
+}
+
+// Map penyimpanan sesi secara memori (token -> username)
+var sessions map[string]string = make(map[string]string)
+var sessionsMu sync.RWMutex
+
+func addSession(token string, username string) {
+	sessionsMu.Lock()
+	sessions[token] = username
+	sessionsMu.Unlock()
+}
+
+func removeSession(token string) {
+	sessionsMu.Lock()
+	delete(sessions, token)
+	sessionsMu.Unlock()
+}
+
+func checkSession(token string) bool {
+	sessionsMu.RLock()
+	var exists bool
+	_, exists = sessions[token]
+	sessionsMu.RUnlock()
+	return exists
+}
+
+// Middleware otentikasi untuk melindungi endpoint dasbor
+func authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Rute publik yang tidak memerlukan sesi login
+		if r.URL.Path == "/login" || r.URL.Path == "/login.html" || r.URL.Path == "/style.css" || r.URL.Path == "/upload" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		var cookie *http.Cookie
+		var err error
+		cookie, err = r.Cookie("session_token")
+		if err != nil {
+			// Kembalikan error 401 jika akses via API, atau redirect ke login jika akses via browser
+			if r.URL.Path == "/status" || r.URL.Path == "/stream" {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
+			return
+		}
+
+		if !checkSession(cookie.Value) {
+			if r.URL.Path == "/status" || r.URL.Path == "/stream" {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 
 // handleUpload menerima kiriman gambar biner (JPEG) dari ESP32-CAM via HTTP POST.
 func handleUpload(w http.ResponseWriter, r *http.Request) {
@@ -189,26 +299,122 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(jsonBytes)
 }
 
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// handleLogin memverifikasi kredensial pengguna dan menerbitkan cookie sesi
+func handleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Metode tidak diizinkan", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req LoginRequest
+	var err error
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Format request salah", http.StatusBadRequest)
+		return
+	}
+
+	// Verifikasi ketersediaan user di database
+	var storedPassword string
+	var row *sql.Row = db.QueryRow("SELECT password FROM users WHERE username = ?", req.Username)
+	err = row.Scan(&storedPassword)
+	if err == sql.ErrNoRows {
+		http.Error(w, "Username atau password salah", http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		http.Error(w, "Kesalahan database", http.StatusInternalServerError)
+		return
+	}
+
+	// Bandingkan password hash
+	err = bcrypt.CompareHashAndPassword([]byte(storedPassword), []byte(req.Password))
+	if err != nil {
+		http.Error(w, "Username atau password salah", http.StatusUnauthorized)
+		return
+	}
+
+	// Generate token sesi unik
+	var tokenBytes []byte = make([]byte, 16)
+	_, err = rand.Read(tokenBytes)
+	if err != nil {
+		http.Error(w, "Gagal memproses sesi", http.StatusInternalServerError)
+		return
+	}
+	var token string = hex.EncodeToString(tokenBytes)
+
+	// Simpan sesi login
+	addSession(token, req.Username)
+
+	// Set session cookie
+	var cookie *http.Cookie = &http.Cookie{
+		Name:     "session_token",
+		Value:    token,
+		Expires:  time.Now().Add(24 * time.Hour),
+		HttpOnly: true,
+		Path:     "/",
+	}
+	http.SetCookie(w, cookie)
+
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write([]byte(`{"success": true, "message": "Login berhasil"}`))
+}
+
+// handleLogout menghapus cookie sesi aktif
+func handleLogout(w http.ResponseWriter, r *http.Request) {
+	var cookie *http.Cookie
+	var err error
+	cookie, err = r.Cookie("session_token")
+	if err == nil {
+		removeSession(cookie.Value)
+	}
+
+	// Set expired cookie
+	var expiredCookie *http.Cookie = &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour),
+		HttpOnly: true,
+		Path:     "/",
+	}
+	http.SetCookie(w, expiredCookie)
+
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write([]byte(`{"success": true, "message": "Logout berhasil"}`))
+}
+
 func main() {
+	// Inisialisasi database SQLite
+	initDB()
+
 	// Jalankan thread broadcast server
 	go streamServer.Start()
 
 	var mux *http.ServeMux = http.NewServeMux()
 
-	// Daftarkan route HTTP
+	// Daftarkan route HTTP publik & terproteksi
 	mux.HandleFunc("/upload", handleUpload)
 	mux.HandleFunc("/stream", handleStream)
 	mux.HandleFunc("/status", handleStatus)
+	mux.HandleFunc("/login", handleLogin)
+	mux.HandleFunc("/logout", handleLogout)
 
 	// Layani aset statis frontend
 	var fileServer http.Handler = http.FileServer(http.Dir("frontend"))
 	mux.Handle("/", fileServer)
 
+	// Terapkan middleware otentikasi
+	var protectedHandler http.Handler = authMiddleware(mux)
+
 	var serverAddr string = ":8080"
 	log.Printf("Server berjalan di alamat http://localhost%s\n", serverAddr)
 	
 	var err error
-	err = http.ListenAndServe(serverAddr, mux)
+	err = http.ListenAndServe(serverAddr, protectedHandler)
 	if err != nil {
 		log.Fatalf("Server gagal berjalan: %v", err)
 	}
