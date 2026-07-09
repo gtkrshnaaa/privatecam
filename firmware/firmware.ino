@@ -1,3 +1,4 @@
+// /firmware/firmware.ino
 /*
  * Firmware untuk Prototype CCTV Privat berbasis ESP32-CAM.
  * Menginisialisasi kamera OV2640, menghubungkan ke Wi-Fi, 

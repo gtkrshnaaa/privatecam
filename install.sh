@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# /install.sh
 
 # =========================================================================
 # Skrip Otomasi Deployment Server PrivateCam.

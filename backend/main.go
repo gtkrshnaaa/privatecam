@@ -1,3 +1,4 @@
+// /backend/main.go
 /*
  * Backend Server Golang untuk Sistem CCTV Privat (PrivateCam).
  * File ini mengelola alur upload gambar dari ESP32-CAM, penyiaran video stream (MJPEG),

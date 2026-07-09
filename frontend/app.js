@@ -1,3 +1,4 @@
+// /frontend/app.js
 /*
  * Logika Interaksi Klien (JS) - Dasbor Utama PrivateCam.
  * Menangani inisialisasi aliran video MJPEG dari server backend, polling berkala status sistem,
