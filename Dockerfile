@@ -8,33 +8,42 @@
 # --- Stage 1: Build Golang Binary ---
 FROM golang:1.22-alpine AS builder
 
-WORKDIR /app
+WORKDIR /app/backend
 
-# Copy dependency file
-COPY backend/go.mod ./
+# Copy dependency files
+COPY backend/go.mod backend/go.sum ./
 
-# Download dependencies (if any)
+# Download dependencies
 RUN go mod download
 
 # Copy source code
-COPY backend/main.go ./
+COPY backend/ ./
 
 # Compile binary statically
-RUN CGO_ENABLED=0 GOOS=linux go build -o server main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server main.go
 
 # --- Stage 2: Final Light Container ---
 FROM alpine:latest
 
+# Install ca-certificates and tzdata to support secure connections and correct timezones
+RUN apk --no-cache add ca-certificates tzdata
+
 WORKDIR /app
 
-# Install ca-certificates just in case
-RUN apk --no-cache add ca-certificates
+# Create data directory for SQLite database persistence and setup non-root user
+RUN mkdir -p /app/data && \
+    addgroup -S appgroup && \
+    adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
 
 # Copy compiled binary from builder
-COPY --from=builder /app/server .
+COPY --from=builder --chown=appuser:appgroup /app/server .
 
 # Copy static frontend assets
-COPY frontend/ ./frontend/
+COPY --chown=appuser:appgroup frontend/ ./frontend/
+
+# Use the non-root user
+USER appuser
 
 # Expose server port inside container
 EXPOSE 8080
