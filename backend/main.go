@@ -91,7 +91,11 @@ var db *sql.DB
 // Inisialisasi database SQLite
 func initDB() {
 	var err error
-	db, err = sql.Open("sqlite", "privatecam.db")
+	var dbPath string = os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "privatecam.db"
+	}
+	db, err = sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatalf("Gagal membuka database: %v", err)
 	}
