@@ -5,8 +5,6 @@
 # mengatur nama kontainer, zona waktu lokal, persistensi data SQLite,
 # dan menerapkan kebijakan restart otomatis.
 # =========================================================================
-version: '3.8'
-
 services:
   privatecam:
     build:
