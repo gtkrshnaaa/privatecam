@@ -1,0 +1,8 @@
+.git
+.gitignore
+README.md
+firmware/
+documentations/
+backend/tests/
+privatecam-test-server
+privatecam.db
