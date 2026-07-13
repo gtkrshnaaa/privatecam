@@ -104,7 +104,7 @@ async function fetchServerStatus() {
     try {
         const response = await fetch('/status');
         if (response.status === 401) {
-            window.location.href = '/login.html';
+            window.location.href = '/login';
             return;
         }
         
@@ -177,7 +177,7 @@ btnLogout.addEventListener('click', async () => {
     try {
         const response = await fetch('/logout', { method: 'POST' });
         if (response.ok) {
-            window.location.href = '/login.html';
+            window.location.href = '/login';
         } else {
             addLog("Gagal keluar dari sesi.", "error");
         }

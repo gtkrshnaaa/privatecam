@@ -72,7 +72,7 @@
 
                 if (response.ok) {
                     // Login sukses, redirect ke dasbor utama
-                    window.location.href = '/';
+                    window.location.href = '/dashboard';
                 } else {
                     const data = await response.json().catch(() => ({}));
                     errorBox.textContent = data.message || 'Username atau password salah!';
