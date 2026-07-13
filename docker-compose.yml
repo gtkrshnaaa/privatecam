@@ -2,7 +2,8 @@
 # =========================================================================
 # Konfigurasi Docker Compose untuk Deployment Server PrivateCam.
 # Memetakan port kontainer internal 8080 ke port host eksternal 49111,
-# mengatur nama kontainer, zona waktu lokal, dan menerapkan kebijakan restart otomatis.
+# mengatur nama kontainer, zona waktu lokal, persistensi data SQLite,
+# dan menerapkan kebijakan restart otomatis.
 # =========================================================================
 version: '3.8'
 
@@ -17,3 +18,10 @@ services:
     restart: always
     environment:
       - TZ=Asia/Jakarta
+      - DB_PATH=/app/data/privatecam.db
+    volumes:
+      - privatecam-data:/app/data
+
+volumes:
+  privatecam-data:
+    driver: local
