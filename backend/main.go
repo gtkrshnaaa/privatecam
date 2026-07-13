@@ -162,7 +162,7 @@ func checkSession(token string) bool {
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Rute publik yang tidak memerlukan sesi login
-		if r.URL.Path == "/login" || r.URL.Path == "/login.html" || r.URL.Path == "/style.css" || r.URL.Path == "/upload" {
+		if r.URL.Path == "/login" || r.URL.Path == "/style.css" || r.URL.Path == "/upload" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -176,7 +176,7 @@ func authMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
@@ -185,7 +185,7 @@ func authMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 
@@ -317,8 +317,13 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// handleLogin memverifikasi kredensial pengguna dan menerbitkan cookie sesi
+// handleLogin melayani halaman login (GET) dan memverifikasi kredensial (POST)
 func handleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		http.ServeFile(w, r, "frontend/login.html")
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Metode tidak diizinkan", http.StatusMethodNotAllowed)
 		return
@@ -416,9 +421,28 @@ func main() {
 	mux.HandleFunc("/login", handleLogin)
 	mux.HandleFunc("/logout", handleLogout)
 
-	// Layani aset statis frontend
+	// Layani aset statis frontend & redirect rute utama/obsolete html
 	var fileServer http.Handler = http.FileServer(http.Dir("frontend"))
-	mux.Handle("/", fileServer)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" || r.URL.Path == "/index.html" {
+			http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+			return
+		}
+		if r.URL.Path == "/login.html" {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		fileServer.ServeHTTP(w, r)
+	})
+
+	// Rute Dasbor terproteksi
+	mux.HandleFunc("/dashboard", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Metode tidak diizinkan", http.StatusMethodNotAllowed)
+			return
+		}
+		http.ServeFile(w, r, "frontend/index.html")
+	})
 
 	// Terapkan middleware otentikasi
 	var protectedHandler http.Handler = authMiddleware(mux)
