@@ -68,8 +68,8 @@ func TestServerIntegration(t *testing.T) {
 		},
 	}
 
-	// 3. Uji Coba: Akses rute utama dasbor tanpa login (Harus dialihkan ke /login.html)
-	t.Run("RedirectDasborTanpaLogin", func(t *testing.T) {
+	// 3. Uji Coba: Akses rute utama (root) tanpa login (Harus dialihkan ke /dashboard)
+	t.Run("RedirectRootToDashboard", func(t *testing.T) {
 		var resp *http.Response
 		resp, err = clientNoRedirect.Get("http://localhost:49222/")
 		if err != nil {
@@ -82,8 +82,27 @@ func TestServerIntegration(t *testing.T) {
 		}
 
 		var location string = resp.Header.Get("Location")
-		if location != "/login.html" {
-			t.Errorf("Harusnya dialihkan ke '/login.html', malah ke: %s", location)
+		if location != "/dashboard" {
+			t.Errorf("Harusnya dialihkan ke '/dashboard', malah ke: %s", location)
+		}
+	})
+
+	// 3.5. Uji Coba: Akses rute /dashboard tanpa login (Harus dialihkan ke /login)
+	t.Run("RedirectDashboardToLogin", func(t *testing.T) {
+		var resp *http.Response
+		resp, err = clientNoRedirect.Get("http://localhost:49222/dashboard")
+		if err != nil {
+			t.Fatalf("Gagal mengakses /dashboard: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusSeeOther {
+			t.Errorf("Harusnya mendapatkan status 303 (See Other), malah mendapatkan: %d", resp.StatusCode)
+		}
+
+		var location string = resp.Header.Get("Location")
+		if location != "/login" {
+			t.Errorf("Harusnya dialihkan ke '/login', malah ke: %s", location)
 		}
 	})
 
@@ -242,7 +261,7 @@ func TestServerIntegration(t *testing.T) {
 
 		// Validasi bahwa akses dasbor terkunci kembali setelah logout
 		var respCheck *http.Response
-		respCheck, err = clientNoRedirect.Get("http://localhost:49222/")
+		respCheck, err = clientNoRedirect.Get("http://localhost:49222/dashboard")
 		if err != nil {
 			t.Fatalf("Gagal mengecek dasbor paska logout: %v", err)
 		}
@@ -250,6 +269,11 @@ func TestServerIntegration(t *testing.T) {
 
 		if respCheck.StatusCode != http.StatusSeeOther {
 			t.Errorf("Akses dasbor paska logout harusnya dialihkan (303), malah mendapatkan status: %d", respCheck.StatusCode)
+		}
+
+		var location string = respCheck.Header.Get("Location")
+		if location != "/login" {
+			t.Errorf("Harusnya dialihkan ke '/login', malah ke: %s", location)
 		}
 	})
 }
