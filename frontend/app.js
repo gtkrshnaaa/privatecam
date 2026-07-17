@@ -123,6 +123,31 @@ async function fetchServerStatus() {
         // Perbarui status kamera
         updateCameraStatus(data);
         
+        // Perbarui Log Aktivitas dari server secara real-time
+        if (data.logs && Array.isArray(data.logs)) {
+            logContainer.innerHTML = '';
+            data.logs.forEach(logLine => {
+                const entry = document.createElement('div');
+                let className = 'log-entry system';
+                
+                // Klasifikasikan kelas CSS log berdasarkan asalnya
+                if (logLine.includes('[ESP32]')) {
+                    if (logLine.toLowerCase().includes('gagal') || logLine.toLowerCase().includes('error')) {
+                        className = 'log-entry error';
+                    } else {
+                        className = 'log-entry upload';
+                    }
+                } else if (logLine.includes('[Server]')) {
+                    className = 'log-entry system';
+                }
+                
+                entry.className = className;
+                entry.textContent = logLine;
+                logContainer.appendChild(entry);
+            });
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
     } catch (err) {
         // Perbarui badge server ke offline
         serverStatusBadge.innerHTML = `<span class="status-dot red"></span><span class="status-text">Server Hubungkan: Putus</span>`;

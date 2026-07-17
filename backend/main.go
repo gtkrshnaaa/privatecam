@@ -88,6 +88,20 @@ var streamServer *StreamServer = NewStreamServer()
 // Database global instance
 var db *sql.DB
 
+// Penyimpanan Log Aktivitas Terpusat
+var systemLogs []string
+var systemLogsMu sync.Mutex
+
+func addSystemLog(msg string) {
+	systemLogsMu.Lock()
+	defer systemLogsMu.Unlock()
+	if len(systemLogs) >= 50 {
+		systemLogs = systemLogs[1:]
+	}
+	t := time.Now().Format("15:04:05")
+	systemLogs = append(systemLogs, fmt.Sprintf("[%s] %s", t, msg))
+}
+
 // Inisialisasi database SQLite
 func initDB() {
 	var err error
@@ -129,9 +143,12 @@ func initDB() {
 			log.Fatalf("Gagal memasukkan user admin default: %v", err)
 		}
 		log.Println("User admin default (username: admin, password: password) berhasil dibuat di database.")
+		addSystemLog("[Server] User admin default berhasil dibuat.")
 	} else if err != nil {
 		log.Fatalf("Gagal melakukan verifikasi pengguna admin: %v", err)
 	}
+	addSystemLog("[Server] Database SQLite terkoneksi.")
+}
 }
 
 // Map penyimpanan sesi secara memori (token -> username)
@@ -162,7 +179,7 @@ func checkSession(token string) bool {
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Rute publik yang tidak memerlukan sesi login
-		if r.URL.Path == "/login" || r.URL.Path == "/style.css" || r.URL.Path == "/upload" {
+		if r.URL.Path == "/login" || r.URL.Path == "/style.css" || r.URL.Path == "/upload" || r.URL.Path == "/log" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -215,7 +232,18 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update waktu frame terakhir dan kirim data ke channel streaming
-	streamServer.UpdateLastFrameTime()
+	var isFirstFrame bool = false
+	streamServer.LastFrameTimeMu.Lock()
+	if streamServer.LastFrameTime.IsZero() {
+		isFirstFrame = true
+	}
+	streamServer.LastFrameTime = time.Now()
+	streamServer.LastFrameTimeMu.Unlock()
+
+	if isFirstFrame {
+		addSystemLog("[Server] Menerima unggahan frame pertama dari ESP32-CAM.")
+	}
+
 	select {
 	case streamServer.FrameChannel <- data:
 	default:
@@ -233,14 +261,20 @@ func handleStream(w http.ResponseWriter, r *http.Request) {
 	// Daftarkan client ke daftar aktif
 	streamServer.ClientsMu.Lock()
 	streamServer.Clients[clientChan] = true
+	var clientCount int = len(streamServer.Clients)
 	streamServer.ClientsMu.Unlock()
+
+	addSystemLog(fmt.Sprintf("[Server] Klien baru terhubung ke stream. Total klien: %d", clientCount))
 
 	// Bersihkan pendaftaran saat client putus koneksi
 	defer func() {
 		streamServer.ClientsMu.Lock()
 		delete(streamServer.Clients, clientChan)
+		var remainingClients int = len(streamServer.Clients)
 		streamServer.ClientsMu.Unlock()
 		close(clientChan)
+		
+		addSystemLog(fmt.Sprintf("[Server] Klien terputus dari stream. Sisa klien: %d", remainingClients))
 	}()
 
 	// Atur header HTTP untuk MJPEG Streaming
@@ -294,11 +328,17 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 		lastActive = lastTime.Format(time.RFC3339)
 	}
 
+	systemLogsMu.Lock()
+	logsCopy := make([]string, len(systemLogs))
+	copy(logsCopy, systemLogs)
+	systemLogsMu.Unlock()
+
 	var responseData map[string]interface{} = map[string]interface{}{
 		"status":          "online",
 		"active_clients":  activeClients,
 		"last_frame_time": lastActive,
 		"server_time":     time.Now().Format(time.RFC3339),
+		"logs":            logsCopy,
 	}
 
 	var err error
@@ -420,6 +460,25 @@ func main() {
 	mux.HandleFunc("/status", handleStatus)
 	mux.HandleFunc("/login", handleLogin)
 	mux.HandleFunc("/logout", handleLogout)
+	mux.HandleFunc("/log", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Metode tidak diizinkan", http.StatusMethodNotAllowed)
+			return
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Gagal membaca body", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+		
+		msg := string(body)
+		if msg != "" {
+			addSystemLog("[ESP32] " + msg)
+			log.Printf("[ESP32 LOG] %s\n", msg)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
 
 	// Layani aset statis frontend & redirect rute utama/obsolete html
 	var fileServer http.Handler = http.FileServer(http.Dir("frontend"))

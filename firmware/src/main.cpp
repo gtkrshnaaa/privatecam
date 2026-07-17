@@ -113,6 +113,23 @@ void setupWiFi() {
   Serial.println(WiFi.localIP());
 }
 
+// Fungsi pembantu untuk mengirimkan log aktivitas langsung ke dashboard server
+void sendLogToServer(String message) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String logUrl = String(serverUrl);
+    logUrl.replace("/upload", "/log");
+    
+    http.begin(logUrl);
+    http.addHeader("Content-Type", "text/plain");
+    http.setTimeout(3000);
+    int httpResponseCode = http.POST(message);
+    http.end();
+  }
+  Serial.println("[ESP32 LOG] " + message);
+}
+
+
 void setup() {
   // Matikan brownout detector agar ESP32 tidak reset saat terjadi drop tegangan kecil akibat transmisi Wi-Fi
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
@@ -130,13 +147,16 @@ void setup() {
   // Inisialisasi Wi-Fi
   setupWiFi();
 
+  // Kirim log awal boot berhasil ke server
+  sendLogToServer("ESP32-CAM berhasil boot dan terhubung ke Wi-Fi.");
+
   // Inisialisasi Driver Kamera
   if (!initCamera()) {
-    Serial.println("Kamera gagal diaktifkan. Silakan restart board.");
+    sendLogToServer("Gagal mengaktifkan Kamera! Silakan restart board.");
     return;
   }
   
-  Serial.println("Inisialisasi Kamera Sukses. Siap mengirim gambar...");
+  sendLogToServer("Kamera berhasil diaktifkan. Memulai streaming gambar...");
 }
 
 void loop() {
@@ -172,7 +192,8 @@ void loop() {
   if (httpResponseCode > 0) {
     Serial.printf("Gambar terkirim. Respon Server [%d]\n", httpResponseCode);
   } else {
-    Serial.printf("Gagal mengirim gambar. Error: %s\n", http.errorToString(httpResponseCode).c_str());
+    String errMsg = "Gagal kirim gambar. Error: " + http.errorToString(httpResponseCode);
+    sendLogToServer(errMsg);
   }
 
   // Akhiri koneksi HTTP
