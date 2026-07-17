@@ -14,9 +14,9 @@
 // ==========================================
 // KONFIGURASI WIFI & SERVER (Sesuaikan di sini)
 // ==========================================
-const char* ssid = "NAMA_WIFI_ANDA";
-const char* password = "PASSWORD_WIFI_ANDA";
-const char* serverUrl = "http://ALAMAT_IP_SERVER_GOLANG:49111/upload";
+const char* ssid = "ifana cantik";
+const char* password = "111222333";
+const char* serverUrl = "http://72.61.213.51:49111/upload";
 
 // ==========================================
 // KONFIGURASI PIN ESP32-CAM (AI-THINKER MODULE)
