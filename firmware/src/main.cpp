@@ -39,6 +39,8 @@ const char* serverUrl = "http://72.61.213.51:49111/upload";
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
+#define FLASH_GPIO_NUM     4
+
 // Fungsi untuk menginisialisasi modul kamera
 bool initCamera() {
   camera_config_t config;
@@ -115,6 +117,10 @@ void setup() {
   Serial.setDebugOutput(true);
   Serial.println();
 
+  // Nyalakan LED flash bawaan ESP32-CAM untuk pencahayaan
+  pinMode(FLASH_GPIO_NUM, OUTPUT);
+  digitalWrite(FLASH_GPIO_NUM, HIGH);
+
   // Inisialisasi Wi-Fi
   setupWiFi();
 
@@ -149,25 +155,23 @@ void loop() {
   // Inisialisasi HTTP request ke server tujuan
   http.begin(serverUrl);
   http.addHeader("Content-Type", "image/jpeg");
+  http.setTimeout(5000);
 
   // Kirim data biner JPEG
   int httpResponseCode = http.POST(fb->buf, fb->len);
 
+  // Kembalikan frame buffer segera setelah POST untuk menghemat memori
+  esp_camera_fb_return(fb);
+
   if (httpResponseCode > 0) {
-    // Unggahan sukses
-    String response = http.getString();
-    Serial.printf("Gambar terkirim. Respon Server [%d]: %s\n", httpResponseCode, response.c_str());
+    Serial.printf("Gambar terkirim. Respon Server [%d]\n", httpResponseCode);
   } else {
-    // Terjadi kesalahan koneksi
     Serial.printf("Gagal mengirim gambar. Error: %s\n", http.errorToString(httpResponseCode).c_str());
   }
 
   // Akhiri koneksi HTTP
   http.end();
 
-  // Kembalikan frame buffer agar siap digunakan kembali
-  esp_camera_fb_return(fb);
-
-  // Berikan jeda waktu antar pengiriman frame (misal 150 ms untuk ~6-7 FPS)
-  delay(150);
+  // Jeda antar pengiriman frame (500 ms untuk ~2 FPS, lebih stabil untuk VPS jarak jauh)
+  delay(500);
 }
