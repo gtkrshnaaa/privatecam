@@ -10,6 +10,8 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 // ==========================================
 // KONFIGURASI WIFI & SERVER
@@ -112,14 +114,18 @@ void setupWiFi() {
 }
 
 void setup() {
+  // Matikan brownout detector agar ESP32 tidak reset saat terjadi drop tegangan kecil akibat transmisi Wi-Fi
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+
   // Inisialisasi Serial Monitor untuk debugging
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
 
-  // Nyalakan LED flash bawaan ESP32-CAM untuk pencahayaan
+  // Matikan LED flash secara default untuk menghemat daya dan mencegah brownout
   pinMode(FLASH_GPIO_NUM, OUTPUT);
-  digitalWrite(FLASH_GPIO_NUM, HIGH);
+  digitalWrite(FLASH_GPIO_NUM, LOW);
+
 
   // Inisialisasi Wi-Fi
   setupWiFi();
