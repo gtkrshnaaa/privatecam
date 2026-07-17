@@ -163,6 +163,7 @@ void loop() {
   // Pastikan Wi-Fi tetap terhubung
   if (WiFi.status() != WL_CONNECTED) {
     setupWiFi();
+    sendLogToServer("Koneksi Wi-Fi pulih kembali.");
   }
 
   camera_fb_t * fb = NULL;
@@ -170,7 +171,7 @@ void loop() {
   // Ambil frame gambar dari kamera
   fb = esp_camera_fb_get();
   if (!fb) {
-    Serial.println("Gagal mengambil gambar dari kamera.");
+    sendLogToServer("Gagal mengambil gambar dari kamera (Sensor/Frame error).");
     delay(1000);
     return;
   }
