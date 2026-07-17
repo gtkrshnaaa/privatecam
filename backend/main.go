@@ -146,9 +146,7 @@ func initDB() {
 		addSystemLog("[Server] User admin default berhasil dibuat.")
 	} else if err != nil {
 		log.Fatalf("Gagal melakukan verifikasi pengguna admin: %v", err)
-	}
 	addSystemLog("[Server] Database SQLite terkoneksi.")
-}
 }
 
 // Map penyimpanan sesi secara memori (token -> username)
