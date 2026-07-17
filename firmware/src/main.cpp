@@ -11,6 +11,9 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
+// ==========================================
+// KONFIGURASI WIFI & SERVER
+// ==========================================
 const char* ssid = "ifana cantik";
 const char* password = "111222333";
 const char* serverUrl = "http://72.61.213.51:49111/upload";
