@@ -178,7 +178,7 @@ func checkSession(token string) bool {
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Rute publik yang tidak memerlukan sesi login
-		if r.URL.Path == "/login" || r.URL.Path == "/style.css" || r.URL.Path == "/upload" || r.URL.Path == "/log" {
+		if r.URL.Path == "/login" || r.URL.Path == "/login.html" || r.URL.Path == "/style.css" || r.URL.Path == "/upload" || r.URL.Path == "/log" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -192,7 +192,7 @@ func authMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
 			return
 		}
 
@@ -201,7 +201,7 @@ func authMiddleware(next http.Handler) http.Handler {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			http.Redirect(w, r, "/login.html", http.StatusSeeOther)
 			return
 		}
 
@@ -487,7 +487,7 @@ func main() {
 			return
 		}
 		if r.URL.Path == "/login.html" {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			fileServer.ServeHTTP(w, r)
 			return
 		}
 		fileServer.ServeHTTP(w, r)
