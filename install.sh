@@ -62,7 +62,7 @@ if [ $? -eq 0 ]; then
     echo -e "  - Endpoint Upload   : ${YELLOW}http://${LOCAL_IP}:49111/upload${NC}"
     echo -e ""
     echo -e "${BLUE}[PENTING] Masukkan URL Endpoint Upload di atas pada berkas:${NC}"
-    echo -e "          ${YELLOW}firmware/firmware.ino${NC} -> ${YELLOW}const char* serverUrl${NC}"
+    echo -e "          ${YELLOW}firmware/src/main.cpp${NC} -> ${YELLOW}const char* serverUrl${NC} di bagian atas berkas"
     echo -e "==============================================="
 else
     echo -e "${RED}[ERROR] Gagal menjalankan kontainer. Silakan periksa log Docker.${NC}"
