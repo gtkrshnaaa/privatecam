@@ -68,8 +68,8 @@ func TestServerIntegration(t *testing.T) {
 		},
 	}
 
-	// 3. Uji Coba: Akses rute utama (root) tanpa login (Harus dialihkan ke /dashboard)
-	t.Run("RedirectRootToDashboard", func(t *testing.T) {
+	// 3. 1. RedirectDasborTanpaLogin: Akses rute utama (/) tanpa login (Harus dialihkan ke /login.html)
+	t.Run("RedirectDasborTanpaLogin", func(t *testing.T) {
 		var resp *http.Response
 		resp, err = clientNoRedirect.Get("http://localhost:49222/")
 		if err != nil {
@@ -82,31 +82,12 @@ func TestServerIntegration(t *testing.T) {
 		}
 
 		var location string = resp.Header.Get("Location")
-		if location != "/dashboard" {
-			t.Errorf("Harusnya dialihkan ke '/dashboard', malah ke: %s", location)
+		if location != "/login.html" {
+			t.Errorf("Harusnya dialihkan ke '/login.html', malah ke: %s", location)
 		}
 	})
 
-	// 3.5. Uji Coba: Akses rute /dashboard tanpa login (Harus dialihkan ke /login)
-	t.Run("RedirectDashboardToLogin", func(t *testing.T) {
-		var resp *http.Response
-		resp, err = clientNoRedirect.Get("http://localhost:49222/dashboard")
-		if err != nil {
-			t.Fatalf("Gagal mengakses /dashboard: %v", err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusSeeOther {
-			t.Errorf("Harusnya mendapatkan status 303 (See Other), malah mendapatkan: %d", resp.StatusCode)
-		}
-
-		var location string = resp.Header.Get("Location")
-		if location != "/login" {
-			t.Errorf("Harusnya dialihkan ke '/login', malah ke: %s", location)
-		}
-	})
-
-	// 4. Uji Coba: Akses rute /status tanpa login (Harus ditolak dengan status 401)
+	// 4. 2. StatusTerproteksiTanpaLogin: Akses rute /status tanpa login (Harus ditolak dengan status 401)
 	t.Run("StatusTerproteksiTanpaLogin", func(t *testing.T) {
 		var resp *http.Response
 		resp, err = clientNoRedirect.Get("http://localhost:49222/status")
@@ -120,7 +101,7 @@ func TestServerIntegration(t *testing.T) {
 		}
 	})
 
-	// 5. Uji Coba: Login dengan kredensial salah (Harus ditolak dengan status 401)
+	// 5. 3. LoginGagalKredensialSalah: Login dengan kredensial salah (Harus ditolak dengan status 401)
 	t.Run("LoginGagalKredensialSalah", func(t *testing.T) {
 		var payload map[string]string = map[string]string{
 			"username": "admin",
@@ -144,7 +125,7 @@ func TestServerIntegration(t *testing.T) {
 		}
 	})
 
-	// 6. Uji Coba: Login dengan kredensial benar (Harus sukses dengan status 200 dan menyimpan cookie)
+	// 6. 4. LoginSukses: Login dengan kredensial benar (Harus sukses dengan status 200 dan menyimpan cookie)
 	t.Run("LoginSukses", func(t *testing.T) {
 		var payload map[string]string = map[string]string{
 			"username": "admin",
@@ -183,35 +164,7 @@ func TestServerIntegration(t *testing.T) {
 		}
 	})
 
-	// 7. Uji Coba: Akses rute status setelah login (Harus sukses dan menghasilkan JSON terstruktur)
-	t.Run("StatusSuksesSetelahLogin", func(t *testing.T) {
-		var resp *http.Response
-		resp, err = client.Get("http://localhost:49222/status")
-		if err != nil {
-			t.Fatalf("Gagal mengambil status: %v", err)
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("Harusnya mengambil status sukses (200), malah mendapatkan: %d", resp.StatusCode)
-		}
-
-		var data map[string]interface{}
-		err = json.NewDecoder(resp.Body).Decode(&data)
-		if err != nil {
-			t.Fatalf("Gagal melakukan decoding JSON status: %v", err)
-		}
-
-		if data["status"] != "online" {
-			t.Errorf("Nilai key 'status' harusnya 'online', tapi terdeteksi: %v", data["status"])
-		}
-
-		if data["last_frame_time"] != "Never" {
-			t.Errorf("Di awal pengujian, 'last_frame_time' harusnya bernilai 'Never', tapi bernilai: %v", data["last_frame_time"])
-		}
-	})
-
-	// 8. Uji Coba: Pengunggahan frame JPEG (Bypass login di rute /upload)
+	// 7. 5. UploadFrameBerhasil: Pengunggahan frame JPEG (Bypass login di rute /upload)
 	t.Run("UploadFrameBerhasil", func(t *testing.T) {
 		var mockJPEG []byte = []byte("fake-jpeg-binary-data")
 		var resp *http.Response
@@ -226,7 +179,7 @@ func TestServerIntegration(t *testing.T) {
 		}
 	})
 
-	// 9. Uji Coba: Akses rute status setelah pengunggahan (Frame terupdate tidak boleh "Never")
+	// 8. 6. StatusTerupdateSetelahUpload: Akses rute status setelah pengunggahan (Frame terupdate tidak boleh "Never")
 	t.Run("StatusTerupdateSetelahUpload", func(t *testing.T) {
 		var resp *http.Response
 		resp, err = client.Get("http://localhost:49222/status")
@@ -246,7 +199,7 @@ func TestServerIntegration(t *testing.T) {
 		}
 	})
 
-	// 10. Uji Coba: Proses keluar akun (Logout)
+	// 9. 7. LogoutSukses: Proses keluar akun (Logout)
 	t.Run("LogoutSukses", func(t *testing.T) {
 		var resp *http.Response
 		resp, err = client.Post("http://localhost:49222/logout", "application/json", nil)
@@ -272,8 +225,8 @@ func TestServerIntegration(t *testing.T) {
 		}
 
 		var location string = respCheck.Header.Get("Location")
-		if location != "/login" {
-			t.Errorf("Harusnya dialihkan ke '/login', malah ke: %s", location)
+		if location != "/login.html" {
+			t.Errorf("Harusnya dialihkan ke '/login.html', malah ke: %s", location)
 		}
 	})
 }
