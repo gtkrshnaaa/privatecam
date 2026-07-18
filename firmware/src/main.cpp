@@ -41,8 +41,6 @@ const char* serverUrl = "http://72.61.213.51:49111/upload";
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
-#define FLASH_GPIO_NUM     4
-
 // Fungsi untuk menginisialisasi modul kamera
 bool initCamera() {
   camera_config_t config;
@@ -138,11 +136,6 @@ void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
   Serial.println();
-
-  // Matikan LED flash secara default untuk menghemat daya dan mencegah brownout
-  pinMode(FLASH_GPIO_NUM, OUTPUT);
-  digitalWrite(FLASH_GPIO_NUM, LOW);
-
 
   // Inisialisasi Wi-Fi
   setupWiFi();
